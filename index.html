@@ -4,19 +4,30 @@
 		<script src="search.js"></script>
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+		<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
 	</head>
 
 	<body style="padding: 20px" onload='doSearch()'>
+	<script type="text/javascript">
+		function buildSearch() {
+			doSearch($("#searchBar")[0].value)
+		}
+	</script>
+
 		<div class="container">
 			<div class="form-group">
 				<input type="input" class="form-control" id="searchBar" aria-describedby="emailHelp" placeholder="Search...">
 			</div>
-			<button type="submit" class="btn btn-primary">Submit</button>
+			<button type="submit" class="btn btn-primary" onclick="buildSearch()">Submit</button>
 		</div>
 
 		<div class="container-fluid">
 
+			<div id="leftTab" class="container">
+			</div>
 
+			<div id="rightTab" class="container">
+			</div>
 
 		</div>
 
