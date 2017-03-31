@@ -2,7 +2,9 @@ window.currentSearch = {
 }
 
 function buildSearch() {
-	doSearch($("#searchBar")[0].value);
+	doSearch($("#searchBar")[0].value, window.currentSearch, AGGS, function(data) {
+		updateUI(data);
+	});
 
 	$("#searchFilters").html(JSON.stringify(window.currentSearch));
 
@@ -13,25 +15,36 @@ function buildSearch() {
 	});
 }
 
-function doSearch(qry) {
-	var subQuery = buildQuery(qry, window.currentSearch);
-	console.log(JSON.stringify(subQuery, null, 2));
+function doSearch(qry, search, aggs, successFunc, extra) {
+	var subQuery = buildQuery(qry, search);
+
+	var dataToSend = {
+		'query' : subQuery,
+		'aggs': aggs
+	};
+
+	if (extra != null && extra != undefined) {
+		if (extra.size != undefined) {
+			dataToSend.size = extra.size;
+		}
+		if (extra.from != undefined) {
+			dataToSend.from = extra.from;
+		}
+	}
+
+
+	console.log(JSON.stringify(dataToSend, null, 2));
 
 	jQuery.ajax({
 		method:'POST',
 		url: 'http://10.100.1.59:9200/jobs/job/_search',
-		data: JSON.stringify({
-			'query' : subQuery,
-			'aggs': AGGS
-		}),
-		success: function(data) {
-			updateUI(data);
-		},
+		data: JSON.stringify(dataToSend),
+		success: successFunc,
 		error: function(error) {
 			console.log(error);
 		},
 		contentType: "application/json; charset=utf-8"
-	})
+	});
 }
 
 function clearStr(str) {
@@ -69,11 +82,21 @@ function buildQuery(qry, searchObj) {
 		});
 	}
 
-	var roles = window.currentSearch.roles;
+	var roles = searchObj.roles;
 	if (roles != undefined && roles != null) {
 		roles.forEach(function (role) {
 			topLevelBool.bool.must.push(nestedBool("roles", "roles.name", role));
 		});
+	}
+
+	var metadata = searchObj.metadata;
+	if (metadata != undefined && metadata != null) {
+		topLevelBool.bool.must.push(nestedBool("metadata", "metadata.name", metadata));
+	}
+
+	var input = searchObj.input;
+	if (input != undefined && input != null) {
+		topLevelBool.bool.must.push(nestedBool("inputData", "inputData.name", input));
 	}
 
 	return topLevelBool;
@@ -169,6 +192,7 @@ function buildBuckets(name, data) {
 		link.href = "#"
 
 		$(link).click(function() {
+			var build = true;
 			if (name == 'Teams') {
 				window.currentSearch.team = bucket.key;
 			} else if (name == 'Users') {
@@ -177,9 +201,12 @@ function buildBuckets(name, data) {
 			} else if (name == 'Roles') {
 				if (!window.currentSearch.roles) window.currentSearch.roles = [];
 				window.currentSearch.roles.push(bucket.key);
+			} else {
+				build = false;
+				drawHistogram(name, bucket);
 			}
 
-			buildSearch();
+			if (build) buildSearch();
 		})
 
 		link.innerHTML =  bucket.key + " (" + bucket.doc_count + ")";
@@ -188,6 +215,34 @@ function buildBuckets(name, data) {
 	})
 	$(wrapperDiv).append(newDiv)
 	return wrapperDiv;
+}
+
+function drawHistogram(name, bucket) {
+	var newSearch = $.extend(true, {}, window.currentSearch);
+	var newAggs   = null;
+
+	if (name == 'Metadata') {
+		var newAggs = {metadata: $.extend(true, {}, AGGS.metadata)};
+		newSearch.metadata = bucket.key;
+		newAggs.metadata.aggs.all_metadata.terms.field = "metadata.value";
+	} else {
+		var newAggs = {inputs: $.extend(true, {}, AGGS.inputs)};
+		newSearch.metadata = bucket.key;
+		newAggs.inputs.aggs.all_inputs.terms.field = "inputData.value";
+	}
+
+	doSearch($("#searchBar")[0].value, newSearch, newAggs, function(data) {
+		console.log(data);
+		showHistogram(name, bucket, data.aggregations);
+	}, {
+		size: 0
+	});
+}
+
+function showHistogram(name, bucket, data) {
+	var buckets = name == 'Metadata' ? data.metadata.all_metadata.buckets : data.inputs.all_inputs.buckets;
+
+
 }
 
 
