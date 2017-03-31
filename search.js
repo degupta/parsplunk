@@ -2,7 +2,9 @@ window.currentSearch = {
 }
 
 function buildSearch() {
-	doSearch($("#searchBar")[0].value)
+	doSearch($("#searchBar")[0].value);
+
+	$("#searchFilters").html(JSON.stringify(window.currentSearch));
 
 	$("#searchBar").keyup(function(event) {
 		if(event.keyCode == 13) {
