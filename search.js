@@ -227,12 +227,11 @@ function drawHistogram(name, bucket) {
 		newAggs.metadata.aggs.all_metadata.terms.field = "metadata.value";
 	} else {
 		var newAggs = {inputs: $.extend(true, {}, AGGS.inputs)};
-		newSearch.metadata = bucket.key;
+		newSearch.inputs = bucket.key;
 		newAggs.inputs.aggs.all_inputs.terms.field = "inputData.value";
 	}
 
 	doSearch($("#searchBar")[0].value, newSearch, newAggs, function(data) {
-		console.log(data);
 		showHistogram(name, bucket, data.aggregations);
 	}, {
 		size: 0
@@ -241,8 +240,21 @@ function drawHistogram(name, bucket) {
 
 function showHistogram(name, bucket, data) {
 	var buckets = name == 'Metadata' ? data.metadata.all_metadata.buckets : data.inputs.all_inputs.buckets;
-
-
+	$('#chartContainerOuter').show();
+	var chart = new CanvasJS.Chart("chartContainer", {
+		title: {
+			text: name + ": " + bucket.key
+		},
+		animationEnabled: true,
+		animationDuration: 2000,
+		data: [{
+			type: "column",
+			dataPoints: buckets.map(function(bucket) {
+				return { y: bucket.doc_count, label: bucket.key };
+			})
+		}]
+	});
+	chart.render();
 }
 
 
