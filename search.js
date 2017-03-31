@@ -272,7 +272,7 @@ function drawHistogram(name, bucket) {
 		newAggs.metadata.aggs.all_metadata.terms.field = "metadata.value";
 	} else {
 		var newAggs = {inputs: $.extend(true, {}, AGGS.inputs)};
-		newSearch.inputs = bucket.key;
+		newSearch.input = bucket.key;
 		newAggs.inputs.aggs.all_inputs.terms.field = "inputData.value";
 	}
 
