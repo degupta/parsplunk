@@ -14,7 +14,7 @@ function buildSearch() {
 }
 
 function doSearch(qry) {
-	var subQuery = buildQuery(qry);
+	var subQuery = buildQuery(qry, window.currentSearch);
 	console.log(JSON.stringify(subQuery, null, 2));
 
 	jQuery.ajax({
@@ -38,7 +38,7 @@ function clearStr(str) {
 	return str != null && str != undefined && str != '';
 }
 
-function buildQuery(qry) {
+function buildQuery(qry, searchObj) {
 	var topLevelBool = {};
 	topLevelBool["bool"] = {};
 	topLevelBool.bool.must = [];
@@ -54,15 +54,15 @@ function buildQuery(qry) {
 		});
 	}
 
-	if (clearStr(window.currentSearch.team)) {
+	if (clearStr(searchObj.team)) {
 		topLevelBool.bool.must.push({
 			"term": {
-				"teamDomain" : window.currentSearch.team
+				"teamDomain" : searchObj.team
 			}
 		});
 	}
 
-	var users = window.currentSearch.users;
+	var users = searchObj.users;
 	if (users != undefined && users != null) {
 		users.forEach(function (user) {
 			topLevelBool.bool.must.push(nestedBool("users", "users.email", user));
