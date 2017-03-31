@@ -2,6 +2,7 @@ window.currentSearch = {
 }
 
 function buildSearch() {
+	$('#chartContainerOuter').hide();
 	doSearch($("#searchBar")[0].value, window.currentSearch, AGGS, function(data) {
 		updateUI(data);
 	});
@@ -20,8 +21,11 @@ function doSearch(qry, search, aggs, successFunc, extra) {
 
 	var dataToSend = {
 		'query' : subQuery,
-		'aggs': aggs
 	};
+
+	if (aggs != null) {
+		dataToSend.aggs = aggs;
+	}
 
 	if (extra != null && extra != undefined) {
 		if (extra.size != undefined) {
@@ -52,9 +56,7 @@ function clearStr(str) {
 }
 
 function buildQuery(qry, searchObj) {
-	var topLevelBool = {};
-	topLevelBool["bool"] = {};
-	topLevelBool.bool.must = [];
+	var topLevelBool = { bool: { must: [] } };
 
 	if (clearStr(qry)) {
 		topLevelBool.bool.must.push({
@@ -97,6 +99,30 @@ function buildQuery(qry, searchObj) {
 	var input = searchObj.input;
 	if (input != undefined && input != null) {
 		topLevelBool.bool.must.push(nestedBool("inputData", "inputData.name", input));
+	}
+
+	var metadataValues = searchObj.metadataValues;
+	if (metadataValues != undefined && metadataValues != null) {
+		var metaBool = { bool: { must: [] } };
+
+		metadataValues.forEach(function(val) {
+			metaBool.bool.must.push(nestedBool("metadata", "metadata.name", val.name));
+			metaBool.bool.must.push(nestedBool("metadata", "metadata.value", val.value));
+		});
+
+		topLevelBool.bool.must.push(metaBool);
+	}
+
+	var inputValues = searchObj.inputValues;
+	if (inputValues != undefined && inputValues != null) {
+		var inputBool = { bool: { must: [] } };
+
+		inputValues.forEach(function(val) {
+			inputBool.bool.must.push(nestedBool("inputData", "inputData.name", val.name));
+			inputBool.bool.must.push(nestedBool("inputData", "inputData.value", val.value));
+		});
+
+		topLevelBool.bool.must.push(inputBool);
 	}
 
 	return topLevelBool;
@@ -240,6 +266,7 @@ function drawHistogram(name, bucket) {
 
 function showHistogram(name, bucket, data) {
 	var buckets = name == 'Metadata' ? data.metadata.all_metadata.buckets : data.inputs.all_inputs.buckets;
+
 	$('#chartContainerOuter').show();
 	var chart = new CanvasJS.Chart("chartContainer", {
 		title: {
@@ -251,7 +278,17 @@ function showHistogram(name, bucket, data) {
 			type: "column",
 			dataPoints: buckets.map(function(bucket) {
 				return { y: bucket.doc_count, label: bucket.key };
-			})
+			}),
+			click: function(e) {
+				if (name == 'Metadata') {
+					if (!window.currentSearch.metadataValues) window.currentSearch.metadataValues = [];
+					window.currentSearch.metadataValues.push({name: bucket.key, value: buckets[e.dataPoint.x].key });
+				} else {
+					if (!window.currentSearch.inputValues) window.currentSearch.inputValues = [];
+					window.currentSearch.inputValues.push({name: bucket.key, value: buckets[e.dataPoint.x].key });
+				}
+				buildSearch();
+			}
 		}]
 	});
 	chart.render();
