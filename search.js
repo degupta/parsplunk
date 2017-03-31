@@ -1,9 +1,19 @@
 window.currentSearch = {
 }
 
+function buildSearch() {
+	doSearch($("#searchBar")[0].value)
+
+	$("#searchBar").keyup(function(event) {
+		if(event.keyCode == 13) {
+			buildSearch();
+		}
+	});
+}
 
 function doSearch(qry) {
 	var subQuery = buildQuery(qry);
+	console.log(JSON.stringify(subQuery, null, 2));
 
 	jQuery.ajax({
 		method:'POST',
@@ -31,12 +41,12 @@ function buildQuery(qry) {
 	topLevelBool["bool"] = {};
 	topLevelBool.bool.must = [];
 
-	if (clearStr(qry) != null) {
+	if (clearStr(qry)) {
 		topLevelBool.bool.must.push({
 			"match": {
 				"_all" : {
 					"query" : qry,
-					"opertor": "and"
+					"operator": "and"
 				}
 			}
 		});
@@ -68,14 +78,17 @@ function buildQuery(qry) {
 }
 
 function nestedBool(path, term, data) {
-	return "nested": {
-		"path": path,
-		"query": {
-			"term": {
-				term: data
+	var res = {
+		"nested": {
+			"path": path,
+			"query": {
+				"term": {}
 			}
 		}
 	};
+
+	res.nested.query.term[term] = data;
+	return res;
 }
 
 function updateUI(data) {
@@ -133,19 +146,42 @@ function updateAggs(aggs) {
 
 function buildBuckets(name, data) {
 	var wrapperDiv = document.createElement("div");
-	var name = $("<p><b>" + name + "</b></p>");
-	$(wrapperDiv).append(name);
+	var nameEl = $("<p><b>" + name + "</b></p>");
+	$(wrapperDiv).append(nameEl);
 	var newDiv = document.createElement("div");
 	newDiv.className = 'collapse'
 
-	$(name).click(function(){
+	if (data.buckets == null || data.buckets == undefined || data.buckets.length == 0) {
+		$(wrapperDiv).append(newDiv)
+		return wrapperDiv;
+	}
+
+	$(nameEl).click(function(){
 		$(newDiv).collapse('toggle');
 	});
 
 	data.buckets.forEach(function(bucket) {
 		var elDiv = document.createElement("div");
 		elDiv.style = 'margin:15px';
-		elDiv.innerHTML = bucket.key + " (" + bucket.doc_count + ")";
+		var link = document.createElement('a');
+		link.href = "#"
+
+		$(link).click(function() {
+			if (name == 'Teams') {
+				window.currentSearch.team = bucket.key;
+			} else if (name == 'Users') {
+				if (!window.currentSearch.users) window.currentSearch.users = [];
+				window.currentSearch.users.push(bucket.key);
+			} else if (name == 'Roles') {
+				if (!window.currentSearch.roles) window.currentSearch.roles = [];
+				window.currentSearch.roles.push(bucket.key);
+			}
+
+			buildSearch();
+		})
+
+		link.innerHTML =  bucket.key + " (" + bucket.doc_count + ")";
+		$(elDiv).append(link);
 		$(newDiv).append(elDiv);
 	})
 	$(wrapperDiv).append(newDiv)

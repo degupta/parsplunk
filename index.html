@@ -6,18 +6,6 @@
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
 		<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
-
-		<script type="text/javascript">
-			function buildSearch() {
-				doSearch($("#searchBar")[0].value)
-
-				$("#searchBar").keyup(function(event) {
-					if(event.keyCode == 13) {
-						buildSearch();
-					}
-				});
-			}
-		</script>
 	</head>
 
 	<body style="padding: 20px" onload='buildSearch()'>
