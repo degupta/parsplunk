@@ -143,6 +143,27 @@ function nestedBool(path, term, data) {
 }
 
 function updateUI(data) {
+	updateJobs(data);
+
+	$("#pageContainter").pagination({
+		items: data.hits.total,
+		itemsOnPage: 10,
+		cssStyle: 'light-theme',
+		onPageClick: function(page, event) {
+			doSearch($("#searchBar")[0].value, window.currentSearch, null, function(data) {
+				updateJobs(data);
+			}, {
+				from: (page - 1) * 10
+			});
+		}
+	});
+
+	if (data.aggregations) {
+		updateAggs(data.aggregations);
+	}
+}
+
+function updateJobs(data) {
 	var mainDiv = $("#rightTab")[0];
 	$(mainDiv).empty();
 	data.hits.hits.forEach(function(hit) {
@@ -178,16 +199,6 @@ function updateUI(data) {
 		newDiv.append(job);
 		mainDiv.append(newDiv);
 	});
-
-	$("#pageContainter").pagination({
-        items: data.hits.total,
-        itemsOnPage: 10,
-        cssStyle: 'light-theme'
-    });
-
-	if (data.aggregations) {
-		updateAggs(data.aggregations);
-	}
 }
 
 function updateAggs(aggs) {
