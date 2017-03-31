@@ -1,85 +1,16 @@
+window.currentSearch = {
+}
+
+
 function doSearch(qry) {
-	var subQuery = {
-		'match': { 
-			'_all' : {
-				'query': qry,
-				'operator': 'and'
-			}
-		}
-	};
-
-	aggs = {
-		"teams": {
-			"terms" : {
-				"field": "teamDomain"
-			}
-		},
-
-		"users": {
-			"nested" : {
-				"path": "users"
-			},
-			"aggs": {
-				"all_users": {
-					"terms" : {
-						"field": "users.email"
-					}
-				}
-			}
-		},
-		
-		"roles": {
-			"nested" : {
-				"path": "roles"
-			},
-			"aggs": {
-				"all_roles": {
-					"terms" : {
-						"field": "roles.name"
-					}
-				}
-			}
-		},
-		
-		"metadata": {
-			"nested" : {
-				"path": "metadata"
-			},
-			"aggs": {
-				"all_metadata": {
-					"terms" : {
-						"field": "metadata.name"
-					}
-				}
-			}
-		},
-		
-		"inputs": {
-			"nested" : {
-				"path": "inputData"
-			},
-			"aggs": {
-				"all_inputs": {
-					"terms" : {
-						"field": "inputData.name"
-					}
-				}
-			}
-		}
-	};
-
-	if (qry == null || qry == undefined || qry == '') {
-		subQuery = {
-			'match_all': { },
-		};
-	}
+	var subQuery = buildQuery(qry);
 
 	jQuery.ajax({
 		method:'POST',
 		url: 'http://10.100.1.59:9200/jobs/job/_search',
 		data: JSON.stringify({
 			'query' : subQuery,
-			'aggs': aggs
+			'aggs': AGGS
 		}),
 		success: function(data) {
 			updateUI(data);
@@ -89,6 +20,62 @@ function doSearch(qry) {
 		},
 		contentType: "application/json; charset=utf-8"
 	})
+}
+
+function clearStr(str) {
+	return str != null && str != undefined && str != '';
+}
+
+function buildQuery(qry) {
+	var topLevelBool = {};
+	topLevelBool["bool"] = {};
+	topLevelBool.bool.must = [];
+
+	if (clearStr(qry) != null) {
+		topLevelBool.bool.must.push({
+			"match": {
+				"_all" : {
+					"query" : qry,
+					"opertor": "and"
+				}
+			}
+		});
+	}
+
+	if (clearStr(window.currentSearch.team)) {
+		topLevelBool.bool.must.push({
+			"term": {
+				"teamDomain" : window.currentSearch.team
+			}
+		});
+	}
+
+	var users = window.currentSearch.users;
+	if (users != undefined && users != null) {
+		users.forEach(function (user) {
+			topLevelBool.bool.must.push(nestedBool("users", "users.email", user));
+		});
+	}
+
+	var roles = window.currentSearch.roles;
+	if (roles != undefined && roles != null) {
+		roles.forEach(function (role) {
+			topLevelBool.bool.must.push(nestedBool("roles", "roles.name", role));
+		});
+	}
+
+	return topLevelBool;
+}
+
+function nestedBool(path, term, data) {
+	return "nested": {
+		"path": path,
+		"query": {
+			"term": {
+				term: data
+			}
+		}
+	};
 }
 
 function updateUI(data) {
@@ -164,3 +151,64 @@ function buildBuckets(name, data) {
 	$(wrapperDiv).append(newDiv)
 	return wrapperDiv;
 }
+
+
+var AGGS = {
+	"teams": {
+		"terms" : {
+			"field": "teamDomain"
+		}
+	},
+
+	"users": {
+		"nested" : {
+			"path": "users"
+		},
+		"aggs": {
+			"all_users": {
+				"terms" : {
+					"field": "users.email"
+				}
+			}
+		}
+	},
+	
+	"roles": {
+		"nested" : {
+			"path": "roles"
+		},
+		"aggs": {
+			"all_roles": {
+				"terms" : {
+					"field": "roles.name"
+				}
+			}
+		}
+	},
+	
+	"metadata": {
+		"nested" : {
+			"path": "metadata"
+		},
+		"aggs": {
+			"all_metadata": {
+				"terms" : {
+					"field": "metadata.name"
+				}
+			}
+		}
+	},
+	
+	"inputs": {
+		"nested" : {
+			"path": "inputData"
+		},
+		"aggs": {
+			"all_inputs": {
+				"terms" : {
+					"field": "inputData.name"
+				}
+			}
+		}
+	}
+};
