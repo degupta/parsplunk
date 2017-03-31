@@ -179,7 +179,15 @@ function updateUI(data) {
 		mainDiv.append(newDiv);
 	});
 
-	updateAggs(data.aggregations);
+	$("#pageContainter").pagination({
+        items: data.hits.total,
+        itemsOnPage: 10,
+        cssStyle: 'light-theme'
+    });
+
+	if (data.aggregations) {
+		updateAggs(data.aggregations);
+	}
 }
 
 function updateAggs(aggs) {
