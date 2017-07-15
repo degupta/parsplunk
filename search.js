@@ -372,10 +372,10 @@ SCHEMA = {
         "type": "keyword"
     },
     "area_id" : {
-        "type": "integer"
+        "type": "long"
     },
     "city" : {
-        "type": "string"
+        "type": "keyword"
     },
     "restaurant_location" : {
         "type": "geo_point"
