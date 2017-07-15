@@ -89,9 +89,9 @@ File.open('orders.csv', 'r').read.each_line do |line|
       doc[:body][:slot] = 'breakfast'
     elsif hour > 12 && hour <= 15
       doc[:body][:slot] = 'lunch'
-    elsif hour > 15 && hour <= 22
+    elsif hour > 15 && hour <= 19
       doc[:body][:slot] = 'snacks'
-    elsif hour > 22 && hour <= 23
+    elsif hour > 19 && hour <= 23
       doc[:body][:slot] = 'dinner'
     end
 

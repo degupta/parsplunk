@@ -73,6 +73,8 @@ function buildQuery(qry, searchObj) {
 		// id, ordered_time, cuisine, avg_rating, sla_bad, items
 		switch(key) {
 			case 'ordered_time':
+			case 'day_of_week':
+			case 'hour_of_day':
 				break;
 
 			case 'cuisine':
@@ -335,7 +337,24 @@ function showHistogram(name, buckets) {
 }
 
 
-var AGGS = {};
+var AGGS = {
+	"day_of_week": {
+        "terms": {
+            "script": {
+                "lang": "painless",
+                "inline": "doc['ordered_time'].date.dayOfWeek"
+            }
+        }
+    },
+    'hour_of_day': {
+    	"terms": {
+            "script": {
+                "lang": "painless",
+                "inline": "doc['ordered_time'].date.hourOfDay"
+            }
+        }
+    }
+};
 
 SCHEMA = {
     "id": {
