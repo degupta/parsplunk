@@ -1,0 +1,74 @@
+PUT orders/_mapping/order
+{
+    "properties": {
+        "id": {
+            "type": "long"
+        },
+        "ordered_time" : {
+            "type": "date"
+        },
+        "payment_status": {
+            "type": "boolean"
+        },
+        "customer_id" : {
+            "type": "long"
+        },
+        "customer_location" : {
+            "type": "geo_point"
+        },
+        "customer_user_agent" : {
+            "type": "keyword"
+        },
+        "payment_method" : {
+            "type": "keyword"
+        },
+        "restaurant_id" : {
+            "type": "long"
+        },
+        "restaurant_name" : {
+            "type": "text"
+        },
+        "cuisine" : {
+            "type": "keyword"
+        },
+        "area_id" : {
+            "type": "integer"
+        },
+        "city_id" : {
+            "type": "integer"
+        },
+        "restaurant_location" : {
+            "type": "geo_point"
+        },
+        "avg_rating" : {
+            "type": "float"
+        },
+        "area_name" : {
+            "type": "keyword"
+        },
+        "sla_bad": {
+            "type": "boolean"
+        },
+        "items": {
+            "type": "nested",
+            "properties": {
+                "item_name" : {
+                    "type": "text"
+                },
+                "is_enabled" : {
+                    "type": "boolean"
+                },
+                "item_price" : {
+                    "type": "float"
+                },
+                "item_id" : {
+                    "type": "long"
+                },
+                "quantity" : {
+                    "type": "integer"
+                }
+            }
+        }
+    }
+}
+
