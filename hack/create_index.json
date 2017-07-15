@@ -47,7 +47,7 @@ PUT orders/_mapping/order
             "type": "keyword"
         },
         "sla_bad": {
-            "type": "boolean"
+            "type": "integer"
         },
         "items": {
             "type": "nested",
