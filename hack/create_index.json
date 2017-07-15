@@ -16,6 +16,9 @@ PUT orders/_mapping/order
         "customer_location" : {
             "type": "geo_point"
         },
+        "customer_hash" : {
+            "type": "keyword"
+        },
         "customer_user_agent" : {
             "type": "keyword"
         },
@@ -39,6 +42,9 @@ PUT orders/_mapping/order
         },
         "restaurant_location" : {
             "type": "geo_point"
+        },
+        "rest_hash" : {
+            "type": "keyword"
         },
         "avg_rating" : {
             "type": "float"

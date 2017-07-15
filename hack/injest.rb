@@ -6,6 +6,8 @@ client = Elasticsearch::Client.new log: true
 client.transport.reload_connections!
 client.cluster.health
 
+CREATE_DOCS = false
+
 
 items = []
 doc = nil
@@ -28,7 +30,7 @@ File.open('orders.csv', 'r').read.each_line do |line|
     item_count += doc[:body][:items].size
     doc[:body][:sla_bad] += 1 if doc[:body][:items].size > 3
     avg_sla += doc[:body][:sla_bad]
-    client.create(doc)
+    client.create(doc) if CREATE_DOCS
     doc = nil
   end
 
@@ -43,6 +45,7 @@ File.open('orders.csv', 'r').read.each_line do |line|
   if doc == nil
     order_count += 1
     ordered_time = parts[1].to_i * 1000
+
     doc = {
       index: 'orders',
       type: 'order',
@@ -76,10 +79,14 @@ File.open('orders.csv', 'r').read.each_line do |line|
     geo_rest = GeoHash.encode(doc[:body][:customer_location][:lat], doc[:body][:customer_location][:lon], 7)
     ghc[geo_cust] = (ghc[geo_cust] || 0) + 1
     ghr[geo_rest] = (ghr[geo_rest] || 0) + 1
+    doc[:body][:customer_hash] = geo_cust
+    doc[:body][:rest_hash] = geo_rest
 
     sla_bad = 0
     sla_bad += 1 if bad_hash.include?(geo_cust)
-    sla_bad += 1 if bad_hash.include?(geo_rest)
+    if geo_cust != geo_rest
+      sla_bad += 2 && bad_hash.include?(geo_rest)
+    end
     sla_bad += 1 if Time.at(ordered_time).hour >= 20 && Time.at(ordered_time).hour <= 23
     doc[:body][:sla_bad] = sla_bad
   else
@@ -99,4 +106,4 @@ puts
 puts
 
 puts "Order Count: #{order_count}, Avg Sla: #{avg_sla.to_f / order_count}, Avg. item Count:  #{item_count.to_f / order_count}"
-client.create(doc)
+client.create(doc) if CREATE_DOCS
