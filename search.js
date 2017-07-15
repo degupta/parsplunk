@@ -82,26 +82,27 @@ function buildQuery(qry, searchObj) {
 				break;
 
 			case 'avg_rating':
-				// var cond = {"range":{}}
-				// cond["term"][key] = {"gte": searchObj[key]}
-				// topLevelBool.bool.must.push(cond);
-				// TODO: How to do Avg rating?
+				for (var i = 0; i < RANGES[key].length; i++) {
+					var range = RANGES[key][i];
+					if (range["key"] == searchObj[key]) {
+						var cond = {"range":{}};
+						cond["range"][key] = {"gte": range["from"], "lt": range["to"] };
+						topLevelBool.bool.must.push(cond);
+					}
+				}
 				break;
 
-			case 'items':
-				var items = searchObj.items;
-				if (items != undefined && items != null) {
-					items.forEach(function (item) {
-						topLevelBool.bool.must.push(nestedBool("items", "items.item_name", item));
-					});
-				}
+			case 'items-item_name':
+			case 'items-is_enabled':
+			case 'items-item_price':
+				topLevelBool.bool.must.push(nestedBool("items", key.replace('items-', 'items.'), searchObj[key]));
 				break;
 
 			case 'id':
 			case 'sla_bad':
 			default:
-				var cond = {"term":{}}
-				cond["term"][key] = searchObj[key]
+				var cond = {"term":{}};
+				cond["term"][key] = searchObj[key];
 				topLevelBool.bool.must.push(cond);
 		}
 	}
@@ -204,7 +205,7 @@ function updateAggs(aggs) {
 	for (var key in aggs) {
 		if (key == 'items-agg') {
 			for (var key2 in aggs['items-agg']) {
-				if (key !== 'doc_count') {
+				if (key2 !== 'doc_count') {
 					mainDiv.append(buildBuckets(key2, aggs['items-agg'][key2]));
 				}
 			}
@@ -407,6 +408,17 @@ SCHEMA = {
     }
 };
 
+var RANGES = {
+	'avg_rating': [
+		{ "key" : "Diarrhoea", "from" : 0, "to" : 1 },
+		{ "key" : "Bad", "from" : 1, "to" : 2 },
+		{ "key" : "Avg", "from" : 2, "to" : 3 },
+		{ "key" : "Good", "from" : 3, "to" : 4 },
+		{ "key" : "Great", "from" : 4, "to" : 5 },
+		{ "key" : "OutOfThisWorld", "from" : 5, "to": 100000 }
+	]
+};
+
 (function() {
 	for (var key in SCHEMA) {
 		// id, ordered_time, cuisine, avg_rating, sla_bad, items
@@ -418,10 +430,13 @@ SCHEMA = {
 			case 'ordered_time':
 				break;
 
-			case 'cuisine':
-				break;
-
 			case 'avg_rating':
+				AGGS[key + '-agg'] = {
+					"range" : {
+						"field" : key,
+						"ranges" : RANGES[key]
+		            }
+				};
 				break;
 
 			case 'customer_location':
@@ -435,17 +450,17 @@ SCHEMA = {
 						"path": "items"
 					},
 					"aggs": {
-						"items-agg-name": {
+						"items-item_name-agg": {
 							"terms" : {
 								"field": "items.item_name"
 							}
 						},
-						"items-agg-enabled": {
+						"items-is_enabled-agg": {
 							"terms" : {
 								"field": "items.is_enabled"
 							}
 						},
-						"items-agg-price": {
+						"items-item_price-agg": {
 							"terms" : {
 								"field": "items.item_price"
 							}
