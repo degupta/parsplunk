@@ -240,6 +240,17 @@ function buildBuckets(name, data) {
 		$(newDiv).collapse('toggle');
 	});
 
+	var plotDiv = document.createElement("div");
+	plotDiv.style = 'margin:15px';
+	var plotLink = document.createElement('a');
+	plotLink.href = "#"
+	plotLink.innerHTML =  "Plot";
+	$(plotLink).click(function() {
+		showHistogram(name, data.buckets);
+	});
+	$(plotDiv).append(plotLink);
+	$(newDiv).append(plotDiv);
+
 	data.buckets.forEach(function(bucket) {
 		var elDiv = document.createElement("div");
 		elDiv.style = 'margin:15px';
@@ -274,34 +285,32 @@ function buildBuckets(name, data) {
 	return wrapperDiv;
 }
 
-function drawHistogram(name, bucket) {
-	var newSearch = $.extend(true, {}, window.currentSearch);
-	var newAggs   = null;
+// function drawHistogram(name, bucket) {
+// 	var newSearch = $.extend(true, {}, window.currentSearch);
+// 	var newAggs   = null;
 
-	if (name == 'Metadata') {
-		var newAggs = {metadata: $.extend(true, {}, AGGS.metadata)};
-		newSearch.metadata = bucket.key;
-		newAggs.metadata.aggs.all_metadata.terms.field = "metadata.value";
-	} else {
-		var newAggs = {inputs: $.extend(true, {}, AGGS.inputs)};
-		newSearch.input = bucket.key;
-		newAggs.inputs.aggs.all_inputs.terms.field = "inputData.value";
-	}
+// 	if (name == 'Metadata') {
+// 		var newAggs = {metadata: $.extend(true, {}, AGGS.metadata)};
+// 		newSearch.metadata = bucket.key;
+// 		newAggs.metadata.aggs.all_metadata.terms.field = "metadata.value";
+// 	} else {
+// 		var newAggs = {inputs: $.extend(true, {}, AGGS.inputs)};
+// 		newSearch.input = bucket.key;
+// 		newAggs.inputs.aggs.all_inputs.terms.field = "inputData.value";
+// 	}
 
-	doSearch($("#searchBar")[0].value, newSearch, newAggs, function(data) {
-		showHistogram(name, bucket, data.aggregations);
-	}, {
-		size: 0
-	});
-}
+// 	doSearch($("#searchBar")[0].value, newSearch, newAggs, function(data) {
+// 		showHistogram(name, bucket, data.aggregations);
+// 	}, {
+// 		size: 0
+// 	});
+// }
 
-function showHistogram(name, bucket, data) {
-	var buckets = name == 'Metadata' ? data.metadata.all_metadata.buckets : data.inputs.all_inputs.buckets;
-
+function showHistogram(name, buckets) {
 	$('#chartContainerOuter').show();
 	var chart = new CanvasJS.Chart("chartContainer", {
 		title: {
-			text: name + ": " + bucket.key
+			text: name
 		},
 		animationEnabled: true,
 		animationDuration: 2000,
