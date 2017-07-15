@@ -65,7 +65,7 @@ File.open('orders.csv', 'r').read.each_line do |line|
        restaurant_name: parts[11],
        cuisine: parts[12].split(',').map { |x| x.delete(' ')},
        area_id: parts[13].to_i,
-       city_id: parts[14].to_i,
+       city: parts[14].to_i == 102 ? 'North' : 'South',
        restaurant_location: {
         lat: parts[15].to_f - 5,
         lon: parts[16].to_f + 2,
@@ -82,12 +82,25 @@ File.open('orders.csv', 'r').read.each_line do |line|
     doc[:body][:customer_hash] = geo_cust
     doc[:body][:rest_hash] = geo_rest
 
+    hour = Time.at(ordered_time).hour
+    if hour >= 0 && hour <= 6
+      doc[:body][:slot] = 'late-night'
+    elsif hour > 6 && hour <= 12
+      doc[:body][:slot] = 'breakfast'
+    elsif hour > 12 && hour <= 15
+      doc[:body][:slot] = 'lunch'
+    elsif hour > 15 && hour <= 22
+      doc[:body][:slot] = 'snacks'
+    elsif hour > 22 && hour <= 23
+      doc[:body][:slot] = 'dinner'
+    end
+
     sla_bad = 0
     sla_bad += 1 if bad_hash.include?(geo_cust)
     if geo_cust != geo_rest
       sla_bad += 2 && bad_hash.include?(geo_rest)
     end
-    sla_bad += 1 if Time.at(ordered_time).hour >= 20 && Time.at(ordered_time).hour <= 23
+    sla_bad += 1 if hour >= 20 && hour <= 23
     doc[:body][:sla_bad] = sla_bad
   else
     doc[:body][:items] << item

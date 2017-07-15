@@ -72,19 +72,20 @@ function buildQuery(qry, searchObj) {
 	for (var key in searchObj) {
 		// id, ordered_time, cuisine, avg_rating, sla_bad, items
 		switch(key) {
-			case 'id':
-				break;
-
 			case 'ordered_time':
 				break;
 
 			case 'cuisine':
+				var cond = {"match":{}}
+				cond["match"][key] = searchObj[key]
+				topLevelBool.bool.must.push(cond);
 				break;
 
 			case 'avg_rating':
-				break;
-
-			case 'sla_bad':
+				// var cond = {"range":{}}
+				// cond["term"][key] = {"gte": searchObj[key]}
+				// topLevelBool.bool.must.push(cond);
+				// TODO: How to do Avg rating?
 				break;
 
 			case 'items':
@@ -96,6 +97,8 @@ function buildQuery(qry, searchObj) {
 				}
 				break;
 
+			case 'id':
+			case 'sla_bad':
 			default:
 				var cond = {"term":{}}
 				cond["term"][key] = searchObj[key]
@@ -154,13 +157,13 @@ function updateOrders(data) {
 			// id, ordered_time, cuisine, avg_rating, sla_bad, items
 			switch(key) {
 
-				case 'ordered_time':
-					$(order).append("<div>" + new Date(mapped[key]) +"</div>");
+				case 'slot':
+					$(order).append("<div><b> Slot: " + mapped[key] +"</b></div>");
 					break;
 
 				case 'cuisine':
 					var cuisines = mapped.cuisine.join(", ");
-					$(order).append("<div>" + cuisines +"</div>");
+					$(order).append("<div>Cuisine: " + cuisines +"</div>");
 					break;
 
 				case 'avg_rating':
@@ -173,7 +176,7 @@ function updateOrders(data) {
 
 				case 'items':
 					var items = mapped.items.map(function(item) { return item.item_name; }).join(", ");
-					$(order).append("<div>" + items +"</div>");
+					$(order).append("<div>ITEMS: " + items +"</div>");
 					break;
 
 				case 'customer_location':
@@ -198,11 +201,15 @@ function updateAggs(aggs) {
 	var mainDiv = $("#leftTab")[0];
 	$(mainDiv).empty();
 
-	mainDiv.append(buildBuckets('Teams', aggs.teams));
-	mainDiv.append(buildBuckets('Users', aggs.users.all_users));
-	mainDiv.append(buildBuckets('Roles', aggs.roles.all_roles));
-	mainDiv.append(buildBuckets('Metadata', aggs.metadata.all_metadata));
-	mainDiv.append(buildBuckets('Inputs', aggs.inputs.all_inputs));
+	for (var key in aggs) {
+		mainDiv.append(buildBuckets(key, aggs[key]));		
+	}
+
+	// mainDiv.append(buildBuckets('Teams', aggs.teams));
+	// mainDiv.append(buildBuckets('Users', aggs.users.all_users));
+	// mainDiv.append(buildBuckets('Roles', aggs.roles.all_roles));
+	// mainDiv.append(buildBuckets('Metadata', aggs.metadata.all_metadata));
+	// mainDiv.append(buildBuckets('Inputs', aggs.inputs.all_inputs));
 	
 
 }
@@ -307,7 +314,84 @@ function showHistogram(name, bucket, data) {
 }
 
 
-var AGGS = {}
+var AGGS = {};
+
+SCHEMA = {
+    "id": {
+        "type": "long"
+    },
+    "ordered_time" : {
+        "type": "date"
+    },
+    "payment_status": {
+        "type": "boolean"
+    },
+    "customer_id" : {
+        "type": "long"
+    },
+    "customer_location" : {
+        "type": "geo_point"
+    },
+    "customer_hash" : {
+        "type": "keyword"
+    },
+    "customer_user_agent" : {
+        "type": "keyword"
+    },
+    "payment_method" : {
+        "type": "keyword"
+    },
+    "restaurant_id" : {
+        "type": "long"
+    },
+    "restaurant_name" : {
+        "type": "text"
+    },
+    "cuisine" : {
+        "type": "keyword"
+    },
+    "area_id" : {
+        "type": "integer"
+    },
+    "city" : {
+        "type": "keyword"
+    },
+    "restaurant_location" : {
+        "type": "geo_point"
+    },
+    "rest_hash" : {
+        "type": "keyword"
+    },
+    "avg_rating" : {
+        "type": "float"
+    },
+    "area_name" : {
+        "type": "keyword"
+    },
+    "sla_bad": {
+        "type": "integer"
+    },
+    "items": {
+        "type": "nested",
+        "properties": {
+            "item_name" : {
+                "type": "text"
+            },
+            "is_enabled" : {
+                "type": "boolean"
+            },
+            "item_price" : {
+                "type": "float"
+            },
+            "item_id" : {
+                "type": "long"
+            },
+            "quantity" : {
+                "type": "integer"
+            }
+        }
+    }
+};
 
 (function() {
 	for (var key in SCHEMA) {
@@ -327,6 +411,10 @@ var AGGS = {}
 				break;
 
 			case 'sla_bad':
+				break;
+
+			case 'customer_location':
+			case 'restaurant_location':
 				break;
 
 			case 'items':
@@ -424,82 +512,3 @@ var AGGS = {}
 // 		}
 // 	}
 // };
-
-SCHEMA = {
-    "properties": {
-        "id": {
-            "type": "long"
-        },
-        "ordered_time" : {
-            "type": "date"
-        },
-        "payment_status": {
-            "type": "boolean"
-        },
-        "customer_id" : {
-            "type": "long"
-        },
-        "customer_location" : {
-            "type": "geo_point"
-        },
-        "customer_hash" : {
-            "type": "keyword"
-        },
-        "customer_user_agent" : {
-            "type": "keyword"
-        },
-        "payment_method" : {
-            "type": "keyword"
-        },
-        "restaurant_id" : {
-            "type": "long"
-        },
-        "restaurant_name" : {
-            "type": "text"
-        },
-        "cuisine" : {
-            "type": "keyword"
-        },
-        "area_id" : {
-            "type": "integer"
-        },
-        "city_id" : {
-            "type": "integer"
-        },
-        "restaurant_location" : {
-            "type": "geo_point"
-        },
-        "rest_hash" : {
-            "type": "keyword"
-        },
-        "avg_rating" : {
-            "type": "float"
-        },
-        "area_name" : {
-            "type": "keyword"
-        },
-        "sla_bad": {
-            "type": "integer"
-        },
-        "items": {
-            "type": "nested",
-            "properties": {
-                "item_name" : {
-                    "type": "text"
-                },
-                "is_enabled" : {
-                    "type": "boolean"
-                },
-                "item_price" : {
-                    "type": "float"
-                },
-                "item_id" : {
-                    "type": "long"
-                },
-                "quantity" : {
-                    "type": "integer"
-                }
-            }
-        }
-    }
-};
