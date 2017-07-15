@@ -202,7 +202,15 @@ function updateAggs(aggs) {
 	$(mainDiv).empty();
 
 	for (var key in aggs) {
-		mainDiv.append(buildBuckets(key, aggs[key]));		
+		if (key == 'items-agg') {
+			for (var key2 in aggs['items-agg']) {
+				if (key !== 'doc_count') {
+					mainDiv.append(buildBuckets(key2, aggs['items-agg'][key2]));
+				}
+			}
+		} else if (key !== 'doc_count') {
+			mainDiv.append(buildBuckets(key, aggs[key]));
+		}
 	}
 
 	// mainDiv.append(buildBuckets('Teams', aggs.teams));
@@ -215,6 +223,7 @@ function updateAggs(aggs) {
 }
 
 function buildBuckets(name, data) {
+	name = name.replace('-agg','');
 	var wrapperDiv = document.createElement("div");
 	var nameEl = $("<p><b>" + name + "</b></p>");
 	$(wrapperDiv).append(nameEl);
@@ -238,18 +247,20 @@ function buildBuckets(name, data) {
 
 		$(link).click(function() {
 			var build = true;
-			if (name == 'Teams') {
-				window.currentSearch.team = bucket.key;
-			} else if (name == 'Users') {
-				if (!window.currentSearch.users) window.currentSearch.users = [];
-				window.currentSearch.users.push(bucket.key);
-			} else if (name == 'Roles') {
-				if (!window.currentSearch.roles) window.currentSearch.roles = [];
-				window.currentSearch.roles.push(bucket.key);
-			} else {
-				build = false;
-				drawHistogram(name, bucket);
-			}
+			// if (name == 'Teams') {
+			// 	window.currentSearch.team = bucket.key;
+			// } else if (name == 'Users') {
+			// 	if (!window.currentSearch.users) window.currentSearch.users = [];
+			// 	window.currentSearch.users.push(bucket.key);
+			// } else if (name == 'Roles') {
+			// 	if (!window.currentSearch.roles) window.currentSearch.roles = [];
+			// 	window.currentSearch.roles.push(bucket.key);
+			// } else {
+			// 	build = false;
+			// 	drawHistogram(name, bucket);
+			// }
+
+			window.currentSearch[name] = bucket.key;
 
 			if (build) buildSearch();
 		})
@@ -345,7 +356,7 @@ SCHEMA = {
         "type": "long"
     },
     "restaurant_name" : {
-        "type": "text"
+        "type": "keyword"
     },
     "cuisine" : {
         "type": "keyword"
@@ -354,7 +365,7 @@ SCHEMA = {
         "type": "integer"
     },
     "city" : {
-        "type": "keyword"
+        "type": "string"
     },
     "restaurant_location" : {
         "type": "geo_point"
@@ -371,11 +382,14 @@ SCHEMA = {
     "sla_bad": {
         "type": "integer"
     },
+    "slot": {
+        "type": "keyword"
+    },
     "items": {
         "type": "nested",
         "properties": {
             "item_name" : {
-                "type": "text"
+                "type": "keyword"
             },
             "is_enabled" : {
                 "type": "boolean"
@@ -410,11 +424,9 @@ SCHEMA = {
 			case 'avg_rating':
 				break;
 
-			case 'sla_bad':
-				break;
-
 			case 'customer_location':
 			case 'restaurant_location':
+			case 'area_id':
 				break;
 
 			case 'items':
@@ -425,17 +437,17 @@ SCHEMA = {
 					"aggs": {
 						"items-agg-name": {
 							"terms" : {
-								"field": "item_name"
+								"field": "items.item_name"
 							}
 						},
 						"items-agg-enabled": {
 							"terms" : {
-								"field": "is_enabled"
+								"field": "items.is_enabled"
 							}
 						},
 						"items-agg-price": {
 							"terms" : {
-								"field": "item_price"
+								"field": "items.item_price"
 							}
 						}
 					}

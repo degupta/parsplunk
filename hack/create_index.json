@@ -34,8 +34,11 @@ PUT orders/_mapping/order
         "cuisine" : {
             "type": "keyword"
         },
+        "area_id" : {
+            "type": "integer"
+        },
         "city" : {
-            "type": "keyword"
+            "type": "string"
         },
         "restaurant_location" : {
             "type": "geo_point"
