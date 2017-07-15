@@ -6,7 +6,7 @@ client = Elasticsearch::Client.new log: true
 client.transport.reload_connections!
 client.cluster.health
 
-CREATE_DOCS = false
+CREATE_DOCS = true
 
 
 items = []

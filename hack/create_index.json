@@ -29,7 +29,7 @@ PUT orders/_mapping/order
             "type": "long"
         },
         "restaurant_name" : {
-            "type": "text"
+            "type": "keyword"
         },
         "cuisine" : {
             "type": "keyword"
@@ -59,7 +59,7 @@ PUT orders/_mapping/order
             "type": "nested",
             "properties": {
                 "item_name" : {
-                    "type": "text"
+                    "type": "keyword"
                 },
                 "is_enabled" : {
                     "type": "boolean"

@@ -41,7 +41,7 @@ function doSearch(qry, search, aggs, successFunc, extra) {
 
 	jQuery.ajax({
 		method:'POST',
-		url: 'http://10.100.1.59:9200/jobs/job/_search',
+		url: 'http://localhost:9200/orders/order/_search',
 		data: JSON.stringify(dataToSend),
 		success: successFunc,
 		error: function(error) {
@@ -69,60 +69,38 @@ function buildQuery(qry, searchObj) {
 		});
 	}
 
-	if (clearStr(searchObj.team)) {
-		topLevelBool.bool.must.push({
-			"term": {
-				"teamDomain" : searchObj.team
-			}
-		});
-	}
+	for (var key in searchObj) {
+		// id, ordered_time, cuisine, avg_rating, sla_bad, items
+		switch(key) {
+			case 'id':
+				break;
 
-	var users = searchObj.users;
-	if (users != undefined && users != null) {
-		users.forEach(function (user) {
-			topLevelBool.bool.must.push(nestedBool("users", "users.email", user));
-		});
-	}
+			case 'ordered_time':
+				break;
 
-	var roles = searchObj.roles;
-	if (roles != undefined && roles != null) {
-		roles.forEach(function (role) {
-			topLevelBool.bool.must.push(nestedBool("roles", "roles.name", role));
-		});
-	}
+			case 'cuisine':
+				break;
 
-	var metadata = searchObj.metadata;
-	if (metadata != undefined && metadata != null) {
-		topLevelBool.bool.must.push(nestedBool("metadata", "metadata.name", metadata));
-	}
+			case 'avg_rating':
+				break;
 
-	var input = searchObj.input;
-	if (input != undefined && input != null) {
-		topLevelBool.bool.must.push(nestedBool("inputData", "inputData.name", input));
-	}
+			case 'sla_bad':
+				break;
 
-	var metadataValues = searchObj.metadataValues;
-	if (metadataValues != undefined && metadataValues != null) {
-		var metaBool = { bool: { must: [] } };
+			case 'items':
+				var items = searchObj.items;
+				if (items != undefined && items != null) {
+					items.forEach(function (item) {
+						topLevelBool.bool.must.push(nestedBool("items", "items.item_name", item));
+					});
+				}
+				break;
 
-		metadataValues.forEach(function(val) {
-			metaBool.bool.must.push(nestedBool("metadata", "metadata.name", val.name));
-			metaBool.bool.must.push(nestedBool("metadata", "metadata.value", val.value));
-		});
-
-		topLevelBool.bool.must.push(metaBool);
-	}
-
-	var inputValues = searchObj.inputValues;
-	if (inputValues != undefined && inputValues != null) {
-		var inputBool = { bool: { must: [] } };
-
-		inputValues.forEach(function(val) {
-			inputBool.bool.must.push(nestedBool("inputData", "inputData.name", val.name));
-			inputBool.bool.must.push(nestedBool("inputData", "inputData.value", val.value));
-		});
-
-		topLevelBool.bool.must.push(inputBool);
+			default:
+				var cond = {"term":{}}
+				cond["term"][key] = searchObj[key]
+				topLevelBool.bool.must.push(cond);
+		}
 	}
 
 	return topLevelBool;
@@ -143,7 +121,7 @@ function nestedBool(path, term, data) {
 }
 
 function updateUI(data) {
-	updateJobs(data);
+	updateOrders(data);
 
 	$("#pageContainter").pagination({
 		items: data.hits.total,
@@ -151,7 +129,7 @@ function updateUI(data) {
 		cssStyle: 'light-theme',
 		onPageClick: function(page, event) {
 			doSearch($("#searchBar")[0].value, window.currentSearch, null, function(data) {
-				updateJobs(data);
+				updateOrders(data);
 			}, {
 				from: (page - 1) * 10
 			});
@@ -163,40 +141,55 @@ function updateUI(data) {
 	}
 }
 
-function updateJobs(data) {
+function updateOrders(data) {
 	var mainDiv = $("#rightTab")[0];
 	$(mainDiv).empty();
 	data.hits.hits.forEach(function(hit) {
 		var mapped = hit._source;
 
-		var job = document.createElement("div");
-		job.className = 'job';
+		var order = document.createElement("div");
+		order.className = 'order';
 
-		$(job).append("<div><b>" + mapped.title + "</b> - " + mapped.teamDomain + "</div></div>");
+		for (var key in mapped) {
+			// id, ordered_time, cuisine, avg_rating, sla_bad, items
+			switch(key) {
 
-		if (mapped.roles) {
-			var roles = mapped.roles.map(function(role) { return role.name; }).join(", ");
-			$(job).append("<div>" + roles.substr(0, 100) + "</div>");
-		}
+				case 'ordered_time':
+					$(order).append("<div>" + new Date(mapped[key]) +"</div>");
+					break;
 
-		if (mapped.users) {
-			var users = mapped.users.map(function(user) { return user.email; }).join(", ");
-			$(job).append("<div>" + users.substr(0, 100) + "</div>");		
-		}
+				case 'cuisine':
+					var cuisines = mapped.cuisine.join(", ");
+					$(order).append("<div>" + cuisines +"</div>");
+					break;
 
-		if (mapped.metadata) {
-			var metadata = mapped.metadata.map(function(m) { return m.name + ": " + m.value }).join(", ");
-			$(job).append("<div>" + metadata.substr(0, 100) + "</div>");		
-		}
+				case 'avg_rating':
+					$(order).append("<div><b>RATING: " + mapped['avg_rating'] + "</b></div>");
+					break;
 
-		if (mapped.inputData) {
-			var inputData = mapped.inputData.map(function(m) { return m.name + ": " + m.value }).join(", ");
-			$(job).append("<div>" + inputData.substr(0, 100) + "</div>");		
+				case 'sla_bad':
+					$(order).append("<div><b>SLA BUCKET: " + mapped['sla_bad'] + "</b></div>");
+					break;
+
+				case 'items':
+					var items = mapped.items.map(function(item) { return item.item_name; }).join(", ");
+					$(order).append("<div>" + items +"</div>");
+					break;
+
+				case 'customer_location':
+				case 'restaurant_location':
+					$(order).append("<div> Location: " + mapped[key]['lat'] + ", " +  mapped[key]['lon'] + "</div>");
+					break;
+
+				default:
+					$(order).append("<div>" + key + ": " + mapped[key] +"</div>");
+					break;
+			}
 		}
 
 		newDiv = document.createElement("div");
 		newDiv.style = 'margin:20px';
-		newDiv.append(job);
+		newDiv.append(order);
 		mainDiv.append(newDiv);
 	});
 }
@@ -314,62 +307,199 @@ function showHistogram(name, bucket, data) {
 }
 
 
-var AGGS = {
-	"teams": {
-		"terms" : {
-			"field": "teamDomain"
-		}
-	},
+var AGGS = {}
 
-	"users": {
-		"nested" : {
-			"path": "users"
-		},
-		"aggs": {
-			"all_users": {
-				"terms" : {
-					"field": "users.email"
+(function() {
+	for (var key in SCHEMA) {
+		// id, ordered_time, cuisine, avg_rating, sla_bad, items
+		switch(key) {
+			case 'id':
+				break;
+
+
+			case 'ordered_time':
+				break;
+
+			case 'cuisine':
+				break;
+
+			case 'avg_rating':
+				break;
+
+			case 'sla_bad':
+				break;
+
+			case 'items':
+				AGGS[key + "-agg"] = {
+					"nested" : {
+						"path": "items"
+					},
+					"aggs": {
+						"items-agg-name": {
+							"terms" : {
+								"field": "item_name"
+							}
+						},
+						"items-agg-enabled": {
+							"terms" : {
+								"field": "is_enabled"
+							}
+						},
+						"items-agg-price": {
+							"terms" : {
+								"field": "item_price"
+							}
+						}
+					}
 				}
-			}
-		}
-	},
-	
-	"roles": {
-		"nested" : {
-			"path": "roles"
-		},
-		"aggs": {
-			"all_roles": {
-				"terms" : {
-					"field": "roles.name"
-				}
-			}
-		}
-	},
-	
-	"metadata": {
-		"nested" : {
-			"path": "metadata"
-		},
-		"aggs": {
-			"all_metadata": {
-				"terms" : {
-					"field": "metadata.name"
-				}
-			}
-		}
-	},
-	
-	"inputs": {
-		"nested" : {
-			"path": "inputData"
-		},
-		"aggs": {
-			"all_inputs": {
-				"terms" : {
-					"field": "inputData.name"
-				}
-			}
+				break;
+
+			default:
+				AGGS[key + "-agg"] = {
+					"terms": {
+						"field": key
+					}
+				};
 		}
 	}
+
+})()
+
+// var AGGS = {
+// 	"teams": {
+// 		"terms" : {
+// 			"field": "teamDomain"
+// 		}
+// 	},
+
+// 	"users": {
+// 		"nested" : {
+// 			"path": "users"
+// 		},
+// 		"aggs": {
+// 			"all_users": {
+// 				"terms" : {
+// 					"field": "users.email"
+// 				}
+// 			}
+// 		}
+// 	},
+	
+// 	"roles": {
+// 		"nested" : {
+// 			"path": "roles"
+// 		},
+// 		"aggs": {
+// 			"all_roles": {
+// 				"terms" : {
+// 					"field": "roles.name"
+// 				}
+// 			}
+// 		}
+// 	},
+	
+// 	"metadata": {
+// 		"nested" : {
+// 			"path": "metadata"
+// 		},
+// 		"aggs": {
+// 			"all_metadata": {
+// 				"terms" : {
+// 					"field": "metadata.name"
+// 				}
+// 			}
+// 		}
+// 	},
+	
+// 	"inputs": {
+// 		"nested" : {
+// 			"path": "inputData"
+// 		},
+// 		"aggs": {
+// 			"all_inputs": {
+// 				"terms" : {
+// 					"field": "inputData.name"
+// 				}
+// 			}
+// 		}
+// 	}
+// };
+
+SCHEMA = {
+    "properties": {
+        "id": {
+            "type": "long"
+        },
+        "ordered_time" : {
+            "type": "date"
+        },
+        "payment_status": {
+            "type": "boolean"
+        },
+        "customer_id" : {
+            "type": "long"
+        },
+        "customer_location" : {
+            "type": "geo_point"
+        },
+        "customer_hash" : {
+            "type": "keyword"
+        },
+        "customer_user_agent" : {
+            "type": "keyword"
+        },
+        "payment_method" : {
+            "type": "keyword"
+        },
+        "restaurant_id" : {
+            "type": "long"
+        },
+        "restaurant_name" : {
+            "type": "text"
+        },
+        "cuisine" : {
+            "type": "keyword"
+        },
+        "area_id" : {
+            "type": "integer"
+        },
+        "city_id" : {
+            "type": "integer"
+        },
+        "restaurant_location" : {
+            "type": "geo_point"
+        },
+        "rest_hash" : {
+            "type": "keyword"
+        },
+        "avg_rating" : {
+            "type": "float"
+        },
+        "area_name" : {
+            "type": "keyword"
+        },
+        "sla_bad": {
+            "type": "integer"
+        },
+        "items": {
+            "type": "nested",
+            "properties": {
+                "item_name" : {
+                    "type": "text"
+                },
+                "is_enabled" : {
+                    "type": "boolean"
+                },
+                "item_price" : {
+                    "type": "float"
+                },
+                "item_id" : {
+                    "type": "long"
+                },
+                "quantity" : {
+                    "type": "integer"
+                }
+            }
+        }
+    }
 };
